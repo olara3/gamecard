@@ -1,56 +1,129 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Jogo da Memória do JOÃO</title>
   <style>
+    :root{
+      --card-width: 130px; /* 30% maior que 100px */
+      --card-height: 182px; /* 30% maior que 140px */
+      --gap: 15px;
+    }
+
+    *{box-sizing:border-box}
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       background: url("images/background.jpg") no-repeat center center fixed;
       background-size: cover;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
+      color: #fff;
+    }
+
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 18px 10px 6px;
+      position: relative;
     }
 
     h1 {
-      color: white;
+      margin: 0;
+      font-size: 28px;
       text-align: center;
-      margin: 20px 0;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.7);
     }
 
+    /* Timer (top-right) */
     #timer {
       position: absolute;
-      top: 10px;
+      top: 12px;
       right: 20px;
-      font-size: 24px;
-      color: yellow;
-      font-weight: bold;
+      font-size: 20px;
+      color: #ffeb3b;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.35);
+      padding: 6px 10px;
+      border-radius: 6px;
     }
 
-    #menu {
-      margin: 20px;
-      padding: 20px;
+    /* Music control (top-left) */
+    #music-control {
+      position: absolute;
+      top: 10px;
+      left: 20px;
       background: rgba(0,0,0,0.6);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #music-control span { font-weight:700 }
+
+    /* Menu inicial */
+    #menu {
+      margin: 18px 0;
+      padding: 18px;
+      background: rgba(0,0,0,0.55);
       border-radius: 10px;
       color: white;
       text-align: center;
+      z-index: 2;
+    }
+
+    #menu p { margin: 0 0 10px 0; font-size: 16px; }
+
+    #menu button {
+      margin: 6px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #1976d2;
+      color: white;
+      font-weight: 600;
+    }
+
+    #menu button:hover { background: #135ea6 }
+
+    /* Game board */
+    main {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 10px 20px 40px;
+      gap: 20px;
     }
 
     #game-board {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 10px;
-      width: 80%;
-      max-width: 800px;
+      grid-template-columns: repeat(auto-fill, minmax(var(--card-width), 1fr));
+      gap: var(--gap);
+      width: min(78%, 920px);
+      align-self: flex-start;
     }
 
+    /* Card styles */
     .card {
-      width: 100px;
-      height: 140px;
+      width: var(--card-width);
+      height: var(--card-height);
       perspective: 1000px;
       cursor: pointer;
+      user-select: none;
     }
 
     .card-inner {
@@ -59,6 +132,8 @@
       height: 100%;
       transition: transform 0.6s;
       transform-style: preserve-3d;
+      border-radius: 10px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.45);
     }
 
     .card.flipped .card-inner {
@@ -70,11 +145,19 @@
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
-      border-radius: 8px;
+      border-radius: 10px;
+      overflow: hidden;
     }
 
     .card-front {
       transform: rotateY(180deg);
+    }
+
+    .card-front img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     .card-back {
@@ -82,12 +165,23 @@
       background-size: cover;
     }
 
+    /* Placar deslocado para a esquerda */
     #placar {
-      margin: 20px;
-      padding: 20px;
+      position: absolute;
+      left: 20px;
+      top: 100px;
+      width: 220px;
       background: rgba(0,0,0,0.6);
       border-radius: 10px;
       color: white;
+      padding: 12px;
+      z-index: 3;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+    }
+
+    #placar h2 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
       text-align: center;
     }
 
@@ -95,51 +189,70 @@
       width: 100%;
       border-collapse: collapse;
       color: white;
+      font-size: 13px;
     }
 
     #placar th, #placar td {
-      border: 1px solid white;
-      padding: 5px;
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 6px 4px;
+      text-align: center;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 720px) {
+      :root { --card-width: 110px; --card-height: 154px; --gap: 10px; }
+      #placar { position: static; width: 90%; margin: 12px auto; }
+      main { flex-direction: column; align-items: center; gap: 12px; }
+      #timer { font-size: 18px; top: 8px; right: 10px; }
+      #music-control { top: 8px; left: 10px; padding: 6px 8px; font-size: 13px; }
     }
   </style>
 </head>
 <body>
-  <h1>Jogo da Memória do JOÃO</h1>
-  <div id="timer">0s</div>
+  <header>
+    <h1>Jogo da Memória do JOÃO</h1>
+    <div id="timer">0s</div>
+    <button id="music-control" aria-pressed="false">🔊 <span>Música OFF</span></button>
+  </header>
 
   <!-- Menu inicial -->
-  <div id="menu">
-    <p>Escolha a dificuldade:</p>
-    <button onclick="iniciarJogo(4)">4 cartas</button>
-    <button onclick="iniciarJogo(8)">8 cartas</button>
-    <button onclick="iniciarJogo(12)">12 cartas</button>
-    <button onclick="iniciarJogo(16)">16 cartas</button>
-    <button onclick="iniciarJogo(20)">20 cartas</button>
+  <div id="menu" role="region" aria-label="Menu de dificuldade">
+    <p>Escolha a dificuldade (número de cartas):</p>
+    <div>
+      <button onclick="iniciarJogo(4)">4 cartas</button>
+      <button onclick="iniciarJogo(8)">8 cartas</button>
+      <button onclick="iniciarJogo(12)">12 cartas</button>
+      <button onclick="iniciarJogo(16)">16 cartas</button>
+      <button onclick="iniciarJogo(20)">20 cartas</button>
+    </div>
   </div>
 
-  <div id="game-board"></div>
+  <main>
+    <div id="game-board" aria-live="polite"></div>
 
-  <!-- Placar -->
-  <div id="placar">
-    <h2>🏆 Melhores Tempos</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Dificuldade</th>
-          <th>Melhor Tempo</th>
-        </tr>
-      </thead>
-      <tbody id="placar-body">
-        <tr><td>4 cartas</td><td id="score-4">--</td></tr>
-        <tr><td>8 cartas</td><td id="score-8">--</td></tr>
-        <tr><td>12 cartas</td><td id="score-12">--</td></tr>
-        <tr><td>16 cartas</td><td id="score-16">--</td></tr>
-        <tr><td>20 cartas</td><td id="score-20">--</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- Placar -->
+    <aside id="placar" aria-label="Melhores tempos">
+      <h2>🏆 Melhores Tempos</h2>
+      <table>
+        <thead>
+          <tr><th>Dificuldade</th><th>Melhor</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>4 cartas</td><td id="score-4">--</td></tr>
+          <tr><td>8 cartas</td><td id="score-8">--</td></tr>
+          <tr><td>12 cartas</td><td id="score-12">--</td></tr>
+          <tr><td>16 cartas</td><td id="score-16">--</td></tr>
+          <tr><td>20 cartas</td><td id="score-20">--</td></tr>
+        </tbody>
+      </table>
+    </aside>
+  </main>
+
+  <!-- Música -->
+  <audio id="bg-music" src="music/trilha.mp3" loop preload="auto"></audio>
 
   <script>
+    /* Dados das cartas (nomes e caminhos conforme informado) */
     const heroes = [
       { name: "Black Panther", img: "images/01-blackpanther.jpg" },
       { name: "Black Widow", img: "images/02-blackwidow.jpg" },
@@ -153,27 +266,101 @@
       { name: "Thor", img: "images/10-thor.jpg" }
     ];
 
+    /* Estado do jogo */
     let tempo = 0;
-    let intervalo;
+    let intervalo = null;
     let primeiraCarta = null;
     let bloqueio = false;
     let paresEncontrados = 0;
     let dificuldadeAtual = 0;
     let melhoresTempos = {4:null,8:null,12:null,16:null,20:null};
 
+    /* Elementos DOM */
+    const timerEl = document.getElementById("timer");
+    const boardEl = document.getElementById("game-board");
+    const menuEl = document.getElementById("menu");
+    const musicEl = document.getElementById("bg-music");
+    const musicBtn = document.getElementById("music-control");
+
+    /* Música: volume 80% */
+    musicEl.volume = 0.8;
+    let musicPlaying = false;
+
+    /* Carrega placar do localStorage (persistência simples) */
+    function carregarPlacar() {
+      try {
+        const raw = localStorage.getItem("memoria_melhores_tempos_v1");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          melhoresTempos = Object.assign(melhoresTempos, parsed);
+        }
+      } catch(e) {
+        console.warn("Erro ao carregar placar:", e);
+      }
+      atualizarPlacarUI();
+    }
+
+    function salvarPlacar() {
+      try {
+        localStorage.setItem("memoria_melhores_tempos_v1", JSON.stringify(melhoresTempos));
+      } catch(e) {
+        console.warn("Erro ao salvar placar:", e);
+      }
+    }
+
+    function atualizarPlacarUI() {
+      [4,8,12,16,20].forEach(n => {
+        const el = document.getElementById(`score-${n}`);
+        el.textContent = melhoresTempos[n] === null ? "--" : `${melhoresTempos[n]}s`;
+      });
+    }
+
+    /* Controle de música (botão) */
+    musicBtn.addEventListener("click", () => {
+      if (musicPlaying) {
+        musicEl.pause();
+        musicPlaying = false;
+        musicBtn.setAttribute("aria-pressed","false");
+        musicBtn.querySelector("span").textContent = "Música OFF";
+      } else {
+        const playPromise = musicEl.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            musicPlaying = true;
+            musicBtn.setAttribute("aria-pressed","true");
+            musicBtn.querySelector("span").textContent = "Música ON";
+          }).catch(() => {
+            // autoplay may be blocked; still toggle UI state to OFF
+            musicPlaying = false;
+            musicBtn.setAttribute("aria-pressed","false");
+            musicBtn.querySelector("span").textContent = "Música OFF";
+          });
+        } else {
+          musicPlaying = true;
+          musicBtn.setAttribute("aria-pressed","true");
+          musicBtn.querySelector("span").textContent = "Música ON";
+        }
+      }
+    });
+
+    /* Timer */
     function iniciarTimer() {
       if (!intervalo) {
         intervalo = setInterval(() => {
           tempo++;
-          document.getElementById("timer").innerText = `${tempo}s`;
+          timerEl.textContent = `${tempo}s`;
         }, 1000);
       }
     }
 
     function pararTimer() {
-      clearInterval(intervalo);
+      if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+      }
     }
 
+    /* Embaralhar (Fisher-Yates) */
     function embaralhar(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -182,81 +369,138 @@
       return array;
     }
 
+    /* Gerar cartas com base na quantidade (qtd deve ser par) */
     function gerarCartas(qtd) {
-      const selecionados = heroes.slice(0, qtd / 2);
-      const pares = [...selecionados, ...selecionados];
+      const paresNecessarios = qtd / 2;
+      // Se houver menos heróis do que paresNecessarios, repetimos a lista (ou poderíamos avisar)
+      const selecionados = heroes.slice(0, paresNecessarios);
+      const pares = [];
+      selecionados.forEach(h => {
+        pares.push(Object.assign({}, h));
+        pares.push(Object.assign({}, h));
+      });
       return embaralhar(pares);
     }
 
+    /* Criar tabuleiro */
     function criarTabuleiro(qtd) {
-      const board = document.getElementById("game-board");
-      board.innerHTML = "";
+      boardEl.innerHTML = "";
       const cartas = gerarCartas(qtd);
-
-      cartas.forEach(hero => {
+      cartas.forEach((hero, idx) => {
         const card = document.createElement("div");
-        card.classList.add("card");
+        card.className = "card";
+        card.setAttribute("data-name", hero.name);
+        card.setAttribute("role","button");
+        card.setAttribute("aria-label", "Carta do jogo");
         card.innerHTML = `
           <div class="card-inner">
             <div class="card-front">
-              <img src="${hero.img}" alt="${hero.name}" style="width:100%;height:100%;border-radius:8px;">
+              <img src="${hero.img}" alt="${hero.name}">
             </div>
-            <div class="card-back"></div>
+            <div class="card-back" aria-hidden="true"></div>
           </div>
         `;
-        card.addEventListener("click", () => virarCarta(card, hero));
-        board.appendChild(card);
+        card.addEventListener("click", () => virarCarta(card));
+        boardEl.appendChild(card);
       });
     }
 
-    function virarCarta(card, hero) {
-      if (bloqueio || card.classList.contains("flipped")) return;
+    /* Lógica ao virar carta */
+    function virarCarta(card) {
+      if (bloqueio) return;
+      if (card.classList.contains("flipped")) return;
+
       iniciarTimer();
       card.classList.add("flipped");
 
       if (!primeiraCarta) {
-        primeiraCarta = { card, hero };
-      } else {
-        if (primeiraCarta.hero.name === hero.name) {
-          paresEncontrados++;
-          primeiraCarta = null;
-          if (paresEncontrados === document.querySelectorAll(".card").length / 2) {
-            pararTimer();
-            alert(`Parabéns! Você completou o jogo em ${tempo}s`);
-            atualizarPlacar(dificuldadeAtual, tempo);
-            document.getElementById("menu").style.display = "block"; // mostra menu de novo
-          }
-        } else {
-          bloqueio = true;
+        primeiraCarta = card;
+        return;
+      }
+
+      // segunda carta
+      const nome1 = primeiraCarta.getAttribute("data-name");
+      const nome2 = card.getAttribute("data-name");
+
+      if (nome1 === nome2) {
+        // par encontrado
+        paresEncontrados++;
+        primeiraCarta = null;
+
+        // vitória?
+        const totalPairs = document.querySelectorAll(".card").length / 2;
+        if (paresEncontrados === totalPairs) {
+          pararTimer();
           setTimeout(() => {
-            card.classList.remove("flipped");
-            primeiraCarta.card.classList.remove("flipped");
-            primeiraCarta = null;
-            bloqueio = false;
-          }, 1000);
+            alert(`Parabéns! Você completou o jogo em ${tempo}s`);
+            registrarTempo(dificuldadeAtual, tempo);
+            menuEl.style.display = "block";
+          }, 250);
         }
+      } else {
+        // não é par
+        bloqueio = true;
+        setTimeout(() => {
+          card.classList.remove("flipped");
+          if (primeiraCarta) primeiraCarta.classList.remove("flipped");
+          primeiraCarta = null;
+          bloqueio = false;
+        }, 900);
       }
     }
 
+    /* Iniciar jogo com qtd cartas */
     function iniciarJogo(qtd) {
+      if (![4,8,12,16,20].includes(qtd)) return;
       dificuldadeAtual = qtd;
       tempo = 0;
       paresEncontrados = 0;
       primeiraCarta = null;
       bloqueio = false;
-      clearInterval(intervalo);
-      intervalo = null;
-      document.getElementById("timer").innerText = "0s";
-      document.getElementById("menu").style.display = "none";
+      pararTimer();
+      timerEl.textContent = "0s";
+      menuEl.style.display = "none";
       criarTabuleiro(qtd);
+      // scroll para o tabuleiro em telas pequenas
+      setTimeout(() => {
+        boardEl.scrollIntoView({behavior:"smooth", block:"center"});
+      }, 120);
     }
 
-    function atualizarPlacar(dificuldade, tempo) {
-      if (melhoresTempos[dificuldade] === null || tempo < melhoresTempos[dificuldade]) {
-        melhoresTempos[dificuldade] = tempo;
-        document.getElementById(`score-${dificuldade}`).innerText = `${tempo}s`;
+    /* Atualiza placar em memória e UI */
+    function registrarTempo(dificuldade, tempoAtual) {
+      if (melhoresTempos[dificuldade] === null || tempoAtual < melhoresTempos[dificuldade]) {
+        melhoresTempos[dificuldade] = tempoAtual;
+        salvarPlacar();
+        atualizarPlacarUI();
       }
     }
+
+    /* Inicialização */
+    carregarPlacar();
+
+    // Opcional: iniciar com menu visível (aguardando escolha)
+    // Se quiser iniciar automaticamente com 12 cartas, descomente:
+    // iniciarJogo(12);
+
+    // Acessibilidade: permitir virar cartas com Enter/Space quando focadas
+    document.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && document.activeElement && document.activeElement.classList.contains("card")) {
+        e.preventDefault();
+        document.activeElement.click();
+      }
+    });
+
+    // Permitir foco nas cartas (tab)
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll(".card").forEach(c => c.setAttribute("tabindex","0"));
+    });
+    observer.observe(boardEl, { childList: true });
+
+    // Antes de fechar a aba, garantir que o timer pare
+    window.addEventListener("beforeunload", () => {
+      pararTimer();
+    });
   </script>
 </body>
 </html>
