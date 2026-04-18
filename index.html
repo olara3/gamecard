@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Jogo da Memória do JOÃO</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url("images/background.jpg") no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    #timer {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 24px;
+      color: yellow;
+      font-weight: bold;
+    }
+
+    #menu {
+      margin: 20px;
+      padding: 20px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+    }
+
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      width: 80%;
+      max-width: 800px;
+    }
+
+    .card {
+      width: 100px;
+      height: 140px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+    }
+
+    .card-front {
+      transform: rotateY(180deg);
+    }
+
+    .card-back {
+      background: url("images/versucard.jpg") no-repeat center center;
+      background-size: cover;
+    }
+
+    #placar {
+      margin: 20px;
+      padding: 20px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+    }
+
+    #placar table {
+      width: 100%;
+      border-collapse: collapse;
+      color: white;
+    }
+
+    #placar th, #placar td {
+      border: 1px solid white;
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jogo da Memória do JOÃO</h1>
+  <div id="timer">0s</div>
+
+  <!-- Menu inicial -->
+  <div id="menu">
+    <p>Escolha a dificuldade:</p>
+    <button onclick="iniciarJogo(4)">4 cartas</button>
+    <button onclick="iniciarJogo(8)">8 cartas</button>
+    <button onclick="iniciarJogo(12)">12 cartas</button>
+    <button onclick="iniciarJogo(16)">16 cartas</button>
+    <button onclick="iniciarJogo(20)">20 cartas</button>
+  </div>
+
+  <div id="game-board"></div>
+
+  <!-- Placar -->
+  <div id="placar">
+    <h2>🏆 Melhores Tempos</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Dificuldade</th>
+          <th>Melhor Tempo</th>
+        </tr>
+      </thead>
+      <tbody id="placar-body">
+        <tr><td>4 cartas</td><td id="score-4">--</td></tr>
+        <tr><td>8 cartas</td><td id="score-8">--</td></tr>
+        <tr><td>12 cartas</td><td id="score-12">--</td></tr>
+        <tr><td>16 cartas</td><td id="score-16">--</td></tr>
+        <tr><td>20 cartas</td><td id="score-20">--</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const heroes = [
+      { name: "Black Panther", img: "images/01-blackpanther.jpg" },
+      { name: "Black Widow", img: "images/02-blackwidow.jpg" },
+      { name: "Capitão América", img: "images/03-capitan.jpg" },
+      { name: "Doctor Strange", img: "images/05-doctorstrange.jpg" },
+      { name: "Hulk", img: "images/06-hulk.jpg" },
+      { name: "Iron Man", img: "images/07-ironman.jpg" },
+      { name: "Scarlet Witch", img: "images/08-scarletwitch.jpg" },
+      { name: "Spider-Man", img: "images/09-spiderman.jpg" },
+      { name: "Thanos", img: "images/09-thanos.jpg" },
+      { name: "Thor", img: "images/10-thor.jpg" }
+    ];
+
+    let tempo = 0;
+    let intervalo;
+    let primeiraCarta = null;
+    let bloqueio = false;
+    let paresEncontrados = 0;
+    let dificuldadeAtual = 0;
+    let melhoresTempos = {4:null,8:null,12:null,16:null,20:null};
+
+    function iniciarTimer() {
+      if (!intervalo) {
+        intervalo = setInterval(() => {
+          tempo++;
+          document.getElementById("timer").innerText = `${tempo}s`;
+        }, 1000);
+      }
+    }
+
+    function pararTimer() {
+      clearInterval(intervalo);
+    }
+
+    function embaralhar(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function gerarCartas(qtd) {
+      const selecionados = heroes.slice(0, qtd / 2);
+      const pares = [...selecionados, ...selecionados];
+      return embaralhar(pares);
+    }
+
+    function criarTabuleiro(qtd) {
+      const board = document.getElementById("game-board");
+      board.innerHTML = "";
+      const cartas = gerarCartas(qtd);
+
+      cartas.forEach(hero => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+        card.innerHTML = `
+          <div class="card-inner">
+            <div class="card-front">
+              <img src="${hero.img}" alt="${hero.name}" style="width:100%;height:100%;border-radius:8px;">
+            </div>
+            <div class="card-back"></div>
+          </div>
+        `;
+        card.addEventListener("click", () => virarCarta(card, hero));
+        board.appendChild(card);
+      });
+    }
+
+    function virarCarta(card, hero) {
+      if (bloqueio || card.classList.contains("flipped")) return;
+      iniciarTimer();
+      card.classList.add("flipped");
+
+      if (!primeiraCarta) {
+        primeiraCarta = { card, hero };
+      } else {
+        if (primeiraCarta.hero.name === hero.name) {
+          paresEncontrados++;
+          primeiraCarta = null;
+          if (paresEncontrados === document.querySelectorAll(".card").length / 2) {
+            pararTimer();
+            alert(`Parabéns! Você completou o jogo em ${tempo}s`);
+            atualizarPlacar(dificuldadeAtual, tempo);
+            document.getElementById("menu").style.display = "block"; // mostra menu de novo
+          }
+        } else {
+          bloqueio = true;
+          setTimeout(() => {
+            card.classList.remove("flipped");
+            primeiraCarta.card.classList.remove("flipped");
+            primeiraCarta = null;
+            bloqueio = false;
+          }, 1000);
+        }
+      }
+    }
+
+    function iniciarJogo(qtd) {
+      dificuldadeAtual = qtd;
+      tempo = 0;
+      paresEncontrados = 0;
+      primeiraCarta = null;
+      bloqueio = false;
+      clearInterval(intervalo);
+      intervalo = null;
+      document.getElementById("timer").innerText = "0s";
+      document.getElementById("menu").style.display = "none";
+      criarTabuleiro(qtd);
+    }
+
+    function atualizarPlacar(dificuldade, tempo) {
+      if (melhoresTempos[dificuldade] === null || tempo < melhoresTempos[dificuldade]) {
+        melhoresTempos[dificuldade] = tempo;
+        document.getElementById(`score-${dificuldade}`).innerText = `${tempo}s`;
+      }
+    }
+  </script>
+</body>
+</html>
